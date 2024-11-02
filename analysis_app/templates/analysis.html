@@ -9,24 +9,44 @@
 <body>
     <h1>Analysis Results</h1>
 
-    <h2>Demographic Distribution</h2>
-    <canvas id="demographicsChart" width="400" height="200"></canvas>
+    <h2>Demographic Distribution (Based on citizenship)</h2>
+    <canvas id="citizenshipChart" width="400" height="200"></canvas>
+
+    <h2>Demographic Distribution (Based on birthplace)</h2>
+    <canvas id="birthplaceChart" width="400" height="200"></canvas>
 
 
     <script>
-        // Prepare data for the demographics chart
-        const demographicsData = {{ demographics_data|safe }};
-        const demographicsLabels = demographicsData.map(item => item.value);
-        const demographicsCounts = demographicsData.map(item => item.count);
+        const citizenshipData = {{ citizenship_data|safe }};
+        const citizenshipLabels = citizenshipData.map(item => item.value);
+        const citizenshipCounts = citizenshipData.map(item => item.count);
 
-        const demographicsChart = new Chart(document.getElementById('demographicsChart'), {
+        const citizenshipChart = new Chart(document.getElementById('citizenshipChart'), {
             type: 'bar',
             data: {
-                labels: demographicsLabels,
+                labels: citizenshipLabels,
                 datasets: [{
                     label: 'Count',
-                    data: demographicsCounts,
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    data: citizenshipCounts,
+                    backgroundColor: 'rgba(50, 100, 150, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+
+                }]
+            }
+        });
+
+        const birthplaceData = {{ birthplace_data|safe }};
+        const birthplaceLabels = birthplaceData.map(item => item.value);
+        const birthplaceCounts = birthplaceData.map(item => item.count);
+
+        const birthplaceChart = new Chart(document.getElementById('birthplaceChart'), {
+            type: 'bar',
+            data: {
+                labels: birthplaceLabels,
+                datasets: [{
+                    label: 'Count',
+                    data: birthplaceCounts,
+                    backgroundColor: 'rgba(25, 150, 100, 0.5)',
                     borderColor: 'rgba(75, 192, 192, 1)',
 
                 }]

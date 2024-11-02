@@ -5,16 +5,25 @@ from .models import AnalysisSummary, Demographics
 from django.db.models import Q
 import json
 
+import json
+from django.shortcuts import render
+from .models import AnalysisSummary, Demographics
+
 def analysis_results(request):
-    analysis_summary = AnalysisSummary.objects.latest('created_at')
+    analysis_summary = AnalysisSummary.objects.filter(table_name='AnalyzableData').latest('created_at')
+    
+    # Fetch all Demographics related to the analysis summary
+    demographics_data = Demographics.objects.filter(analysis_summary=analysis_summary)
 
-    # Fetch all Demographics and TemporalData related to the analysis summary
-    demographics_data = list(Demographics.objects.filter(analysis_summary=analysis_summary).values('value', 'count'))
-
-
+    # Divide data into two categories: 'birthplace' and 'citizenship'
+    birthplace_data = list(demographics_data.filter(type='Birthplace').values('value', 'count'))
+    citizenship_data = list(demographics_data.filter(type='Citizenship').values('value', 'count'))
+   
     # Pass serialized data to the template
     context = {
-        'demographics_data': json.dumps(demographics_data),
-
+        'birthplace_data': json.dumps(birthplace_data),
+        'citizenship_data': json.dumps(citizenship_data),
     }
+
     return render(request, 'analysis.html', context)
+
