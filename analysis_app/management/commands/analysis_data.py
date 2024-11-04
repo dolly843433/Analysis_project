@@ -19,7 +19,12 @@ class Command(BaseCommand):
                     analysis_name="Excel Data Analysis",
                     table_name="AnalyzableData"
                     )
+            df.fillna('', inplace=True)
             for i, row in df.iterrows():
+                for j in range(len(row)):
+                    if row.iloc[j] == '' or row.iloc[j] == 'NA' or row.iloc[j] == 'na':
+                        row.iloc[j] = None
+                
                 AnalyzableData.objects.create(
                     analysis_summary  = analysis_summary , 
                     Entity=row['Name of Individual or Entity'], 
