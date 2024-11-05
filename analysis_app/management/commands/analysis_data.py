@@ -1,10 +1,14 @@
 from django.core.management.base import BaseCommand
 import xml.etree.ElementTree as ET
-from analysis_app.models import AnalysisSummary, Demographics, AnalyzableData, Details
+from analysis_app.models import AnalysisSummary, Demographics, AnalyzableData, Details, JsonEntity, Referent, Dataset, Property
 import pandas as pd
 import os
 from django.conf import settings
 from analysis_app.utils import xml_to_dict , convert_date_to_ymd
+import json
+from django.utils import timezone
+from datetime import datetime
+
 
 
 class Command(BaseCommand):
@@ -15,6 +19,8 @@ class Command(BaseCommand):
         def excelExtracting():
             excel_file_path = os.path.join(settings.BASE_DIR, 'static/data/data.xlsx')
             df = pd.read_excel(excel_file_path, sheet_name='Sheet1')
+            AnalyzableData.objects.all().delete()
+            Demographics.objects.all().delete()
             analysis_summary = AnalysisSummary.objects.create(
                     analysis_name="Excel Data Analysis",
                     table_name="AnalyzableData"
@@ -59,6 +65,7 @@ class Command(BaseCommand):
             tree = ET.parse(xml_file_path)
             root = tree.getroot()
             data_dict = xml_to_dict(root)
+            Details.objects.all().delete()
             analysis_summary = AnalysisSummary.objects.create(
                                 analysis_name="XML Data Analysis",
                                 table_name="Details"
@@ -106,7 +113,69 @@ class Command(BaseCommand):
                     bank_account_hebrew=row['bank account hebrew'], 
                     bank_account_english=row['bank account english']
                     )
+        def jsonInsert():
+            Property.objects.all().delete()
+            Referent.objects.all().delete()
+            Dataset.objects.all().delete()
+            JsonEntity.objects.all().delete()
+            analysis_summary = AnalysisSummary.objects.create(
+                                analysis_name="XML Data Analysis",
+                                table_name="Details"
+                                )
+            # Load JSON data
+            with open(os.path.join(settings.BASE_DIR, 'static/data/data.json'),encoding='utf-8') as file:
+                for line in file:
+                    item = json.loads(line.strip())
+                    
+                    first_seen = timezone.make_aware(datetime.fromisoformat(item['first_seen'])) if 'first_seen' in item else None
+                    last_seen = timezone.make_aware(datetime.fromisoformat(item['last_seen'])) if 'last_seen' in item else None
+                    last_change = timezone.make_aware(datetime.fromisoformat(item['last_change'])) if 'last_change' in item else None
+                    # Create a JsonEntity object
+                    json_entity = JsonEntity.objects.create(
+                        entity_id=item['id'],
+                        caption=item['caption'],
+                        schema=item['schema'],
+                        first_seen=first_seen,
+                        last_seen=last_seen,
+                        last_change=last_change,
+                        target=item.get('target', False),
+                        analysis_summary = analysis_summary
+                    )
+
+                    # Add Referent entries for the entity
+                    for referent_id in item['referents']:
+                        Referent.objects.create(
+                            referent=referent_id,
+                            json_entity=json_entity
+                        )
+
+                    # Add Dataset entries for the entity
+                    for dataset_name in item['datasets']:
+                        Dataset.objects.create(
+                            dataset=dataset_name,
+                            json_entity=json_entity
+                        )
+
+                    # Add Property entries for the entity
+                    for key, values in item['properties'].items():
+                        # If the value is a list, create a row for each item in the list
+                        if isinstance(values, list):
+                            for value in values:
+                                Property.objects.create(
+                                    key=key,
+                                    value=value,  # Store each item in the list as a separate row
+                                    json_entity=json_entity
+                                )
+                        else:
+                            # If the value is not a list, insert it directly
+                            Property.objects.create(
+                                key=key,
+                                value=values,
+                                json_entity=json_entity
+                            )
+                    
         excelExtracting()
         xmlExtracting()
+        jsonInsert()
         print(self.help)
 

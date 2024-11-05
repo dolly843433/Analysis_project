@@ -76,3 +76,31 @@ class Details(models.Model):
     Created=models.DateTimeField(null=True)
     LastSaved=models.DateTimeField(null=True)
     Version=models.FloatField(null=True)
+
+class JsonEntity(models.Model):
+    id = models.AutoField(primary_key=True)
+    entity_id = models.CharField(max_length=100, unique=True)
+    caption = models.CharField(max_length=255)
+    schema = models.CharField(max_length=50)
+    first_seen = models.DateTimeField()
+    last_seen = models.DateTimeField()
+    last_change = models.DateTimeField()
+    target = models.BooleanField(default=False)
+    analysis_summary = models.ForeignKey(AnalysisSummary, on_delete=models.CASCADE, related_name='jsonEntity')
+
+class Referent(models.Model):
+    id = models.AutoField(primary_key=True)
+    referent = models.CharField(max_length=255)
+    json_entity = models.ForeignKey(JsonEntity, on_delete=models.CASCADE, related_name='referent')
+
+class Dataset(models.Model):
+    id = models.AutoField(primary_key=True)
+    dataset = models.CharField(max_length=255)
+    json_entity = models.ForeignKey(JsonEntity, on_delete=models.CASCADE, related_name='dataset')
+
+class Property(models.Model):
+    id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=255)
+    value = models.TextField()  
+    json_entity = models.ForeignKey(JsonEntity, on_delete=models.CASCADE, related_name='property')
+
