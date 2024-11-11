@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 import xml.etree.ElementTree as ET
-from analysis_app.models import AnalysisSummary, Demographics, AnalyzableData, Details, JsonEntity, Referent, Dataset, Property
+from analysis_app.models import AnalysisSummary, Demographics, AnalyzableData, Details, JsonEntity, Referent, Dataset, Property, PdfEntity
 import pandas as pd
 import os
 from django.conf import settings
@@ -8,6 +8,7 @@ from analysis_app.utils import xml_to_dict , convert_date_to_ymd
 import json
 from django.utils import timezone
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 
 
@@ -25,11 +26,11 @@ class Command(BaseCommand):
                     analysis_name="Excel Data Analysis",
                     table_name="AnalyzableData"
                     )
-            df.fillna('', inplace=True)
+            df.fillna('NA', inplace=True)
             for i, row in df.iterrows():
-                for j in range(len(row)):
-                    if row.iloc[j] == '' or row.iloc[j] == 'NA' or row.iloc[j] == 'na':
-                        row.iloc[j] = None
+            #     for j in range(len(row)):
+            #         if row.iloc[j] == '' :
+            #             row.iloc[j] = 'NA'
                 
                 AnalyzableData.objects.create(
                     analysis_summary  = analysis_summary , 
@@ -173,7 +174,33 @@ class Command(BaseCommand):
                                 value=values,
                                 json_entity=json_entity
                             )
-                    
+        def pdfextracing():
+            html_file_path = os.path.join(settings.BASE_DIR, 'static/data/data.html')
+            # Check if the file exists
+            if not html_file_path:
+                print("Error: File not found.")
+                return
+            PdfEntity.objects.all().delete()
+            # Open and parse the HTML file
+            with open(html_file_path, 'r', encoding='utf-8') as file:
+                soup = BeautifulSoup(file, 'html.parser')
+                length = len(soup.find('tr').find_all('th'))
+                # Find all rows in the table and limit to the first 2 data rows
+                rows = soup.find_all('tr')[1:]  # Adjust this slicing as needed
+                con=''
+                # Iterate over the rows and extract Country and Entity
+                for row in rows:
+                    cells = row.find_all('td')
+                    if len(cells) < length:
+                        continue   
+                    country = cells[0].text.strip()
+                    if country:
+                        con = country
+                    entity = cells[1].text.strip()   
+                    # Save data to the database
+                    PdfEntity.objects.create( country=con, entity=entity) 
+            
+        pdfextracing()             
         excelExtracting()
         xmlExtracting()
         jsonInsert()

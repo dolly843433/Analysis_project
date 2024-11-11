@@ -104,3 +104,43 @@ class Property(models.Model):
     value = models.TextField()  
     json_entity = models.ForeignKey(JsonEntity, on_delete=models.CASCADE, related_name='property')
 
+class PdfEntity(models.Model):
+    id=models.AutoField(primary_key=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    entity = models.TextField()
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
